@@ -1,18 +1,26 @@
 {
   "name": "com.kikx.fetchtube",
   "title": "FetchTube",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": "Fawz-Haaroon",
-  "kikx_version": "0.4.0",
-  "description": "Resolve, play and download media from a URL.",
+  "description": "Resolve a media link, inspect its formats, then play or download it.",
   "category": "Media",
+  "kikx_version": "0.4.0",
+
   "include": ["public", "www", "micro"],
+
   "iframe": {
     "allowfullscreen": true,
-    "sandbox": ["allow-scripts", "allow-same-origin", "allow-downloads"],
-    "allow": ["autoplay", "encrypted-media", "fullscreen", "picture-in-picture"]
+    "sandbox": ["allow-scripts", "allow-downloads"],
+    "allow": ["autoplay", "fullscreen", "picture-in-picture"]
   },
-  "services": ["micro", "kv"],
+
+  "system": {
+    "access": ["alerts"]
+  },
+
+  "services": ["micro", "kv", "fs"],
+
   "service_config": {
     "micro": {
       "extractor": {
@@ -22,8 +30,6 @@
       }
     }
   },
-  "system": {
-    "access": ["alerts"]
-  },
+
   "theme": "dark"
 }
