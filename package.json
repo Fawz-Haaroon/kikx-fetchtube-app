@@ -1,16 +1,20 @@
 {
   "name": "kikx-fetchtube-app",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "extractor": "python3 tools/dev-server.py",
     "test": "python3 -m unittest discover -s tests -v",
-    "extractor": "python3 scripts/dev-extractor.py"
+    "test:render": "vite build --ssr tests/render-smoke.entry.js --outDir .dev/ssr --logLevel error && node tests/render-smoke.mjs",
+    "test:client": "node tests/client.integration.mjs",
+    "package": "node tools/package.mjs"
   },
   "dependencies": {
+    "@vue/server-renderer": "^3.5.42",
     "kikx-sdk": "^1.2.0",
     "pinia": "^3.0.4",
     "vue": "^3.5.32"
