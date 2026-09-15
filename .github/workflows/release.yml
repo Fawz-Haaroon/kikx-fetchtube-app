@@ -1,0 +1,75 @@
+name: Build & Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test extractor
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create tag if missing
+        run: |
+          TAG=v${{ steps.version.outputs.version }}
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag already exists"
+            exit 0
+          fi
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: Build
+        run: pnpm build
+
+      - name: Prepare package
+        run: |
+          rm -rf app
+          mkdir -p app
+          cp -r public app/public
+          cp -r www app/www
+          cp -r micro app/micro
+          cp app.json app/app.json
+
+      - name: Create KIKX
+        run: |
+          zip -r app.zip app
+          mv app.zip app.kikx
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          files: app.kikx

@@ -1,0 +1,29 @@
+{
+  "name": "com.kikx.fetchtube",
+  "title": "FetchTube",
+  "version": "0.1.0",
+  "author": "Fawz-Haaroon",
+  "kikx_version": "0.4.0",
+  "description": "Resolve, play and download media from a URL.",
+  "category": "Media",
+  "include": ["public", "www", "micro"],
+  "iframe": {
+    "allowfullscreen": true,
+    "sandbox": ["allow-scripts", "allow-same-origin", "allow-downloads"],
+    "allow": ["autoplay", "encrypted-media", "fullscreen", "picture-in-picture"]
+  },
+  "services": ["micro", "kv"],
+  "service_config": {
+    "micro": {
+      "extractor": {
+        "main": "main.py",
+        "stdout": true,
+        "persistent": true
+      }
+    }
+  },
+  "system": {
+    "access": ["alerts"]
+  },
+  "theme": "dark"
+}
