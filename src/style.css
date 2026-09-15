@@ -1,271 +1,58 @@
 @import "tailwindcss";
-@plugin "daisyui";
-
 @plugin "daisyui" {
-  themes: dark --default;
+  themes: dark --default, light, dim, night, black, sunset, forest, dracula, abyss;
 }
 
-:root {
-  color-scheme: dark;
-  --bg: #121418;
-  --panel: #1b1f27;
-  --line: #2a3140;
-  --text: #ece8df;
-  --muted: #9aa3b2;
-  --accent: #e2a336;
-  --danger: #e06c75;
-}
-
+/* KIKX renders an app in an iframe with scrolling="no" (kikx-mui App.vue), so
+   the app owns its own scroll containers and must never rely on the frame. */
 html,
 body,
 #app {
-  min-height: 100%;
-  background: var(--bg);
-  color: var(--text);
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
-  margin: 0;
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.app {
-  max-width: 44rem;
-  margin: 0 auto;
-  padding: 1.25rem 1rem 3rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+.scroll-area {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
-.mast .mark {
-  font-size: 1.35rem;
-  font-weight: 650;
-  letter-spacing: 0.02em;
-  margin: 0;
+.scroll-area::-webkit-scrollbar {
+  width: 0.25rem;
 }
 
-.lede,
-.muted,
-.empty,
-.footnote {
-  color: var(--muted);
-  margin: 0.25rem 0 0;
+.scroll-area::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--color-base-content) 20%, transparent);
+  border-radius: 999px;
 }
 
-.url-bar {
-  display: flex;
-  gap: 0.5rem;
+/* A selected format row. Outline rather than fill so the row's own text stays
+   legible at every theme. */
+.track-row {
+  @apply w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors;
+  @apply bg-base-200/60 hover:bg-base-200;
 }
 
-.url-bar input {
-  flex: 1;
-  min-width: 0;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  color: var(--text);
-  border-radius: 0.4rem;
-  padding: 0.7rem 0.8rem;
-  font: inherit;
+.track-row[aria-pressed="true"] {
+  @apply bg-primary/10 ring-1 ring-primary;
 }
 
-.url-bar input:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+.tab-button {
+  @apply flex-1 flex flex-col items-center gap-0.5 py-2 text-[0.68rem] font-medium;
+  @apply text-base-content/50 transition-colors;
 }
 
-.btn {
-  border: 0;
-  border-radius: 0.4rem;
-  padding: 0.7rem 0.9rem;
-  font: inherit;
-  cursor: pointer;
+.tab-button[aria-current="page"] {
+  @apply text-primary;
 }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: var(--accent);
-  color: #1a1408;
-  font-weight: 600;
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--muted);
-}
-
-.error {
-  color: var(--danger);
-  margin: 0;
-}
-
-.result header {
-  display: flex;
-  gap: 0.85rem;
-  align-items: flex-start;
-}
-
-.thumb {
-  width: 7.5rem;
-  height: 4.2rem;
-  object-fit: cover;
-  border-radius: 0.3rem;
-  background: var(--panel);
-  flex-shrink: 0;
-}
-
-.head h2 {
-  margin: 0;
-  font-size: 1.05rem;
-  line-height: 1.35;
-}
-
-.head .muted {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-}
-
-.player video {
-  width: 100%;
-  max-height: 18rem;
-  background: #000;
-  border-radius: 0.4rem;
-  margin-top: 0.8rem;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: center;
-  margin: 0.9rem 0;
-}
-
-.formats section {
-  margin-top: 0.8rem;
-}
-
-.formats h3,
-.downloads h2,
-.history h2 {
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  margin: 0 0 0.4rem;
-}
-
-.formats ul,
-.downloads ul,
-.history ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.format {
-  width: 100%;
-  text-align: left;
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--line);
-  border-radius: 0.35rem;
-  padding: 0.55rem 0.7rem;
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-  cursor: pointer;
-  font: inherit;
-}
-
-.format.selected {
-  border-color: var(--accent);
-}
-
-.format .meta {
-  color: var(--muted);
-  display: flex;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.downloads li,
-.history-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 0.35rem;
-  padding: 0.65rem 0.75rem;
-}
-
-.downloads .title,
-.history-item strong {
-  margin: 0;
-  font-weight: 600;
-}
-
-.downloads .path {
-  font-size: 0.75rem;
-  word-break: break-all;
-}
-
-.history .row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.history-item {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  align-items: center;
-  padding: 0.2rem 0;
-}
-
-.history-item img {
-  width: 3.6rem;
-  height: 2.1rem;
-  object-fit: cover;
-  border-radius: 0.25rem;
-}
-
-.history-item span {
-  display: flex;
-  flex-direction: column;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
-}
-
-@media (max-width: 520px) {
-  .url-bar {
-    flex-direction: column;
-  }
-
-  .thumb {
-    width: 5.5rem;
-    height: 3.1rem;
-  }
+.meta-dot + .meta-dot::before {
+  content: "·";
+  @apply mx-1.5 opacity-40;
 }

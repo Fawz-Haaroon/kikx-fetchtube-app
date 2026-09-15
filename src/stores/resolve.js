@@ -1,58 +1,82 @@
 import { defineStore } from "pinia";
-import { getExtractor } from "@/services/extractor.js";
-import { errorFromUnknown } from "@/media/errors.js";
-import { looksLikeUrl, pickDefaultFormat, pickPlayableFormat } from "@/media/format.js";
+
+import { codeOf, describe, detailOf } from "@/extractor/messages.js";
+import { bestAudioFor, defaultTrack, looksLikeUrl } from "@/media/format.js";
+import { extractor } from "./session.js";
 import { useHistoryStore } from "./history.js";
 
 export const useResolveStore = defineStore("resolve", {
   state: () => ({
     url: "",
-    status: "idle",
+    status: "empty",
     media: null,
-    error: null,
-    selectedFormatId: null
+    selectedFormatId: null,
+    failure: null
   }),
+
   getters: {
     selectedFormat(state) {
-      return state.media?.formats.find(item => item.id === state.selectedFormatId) || null;
+      return state.media?.formats.find(track => track.id === state.selectedFormatId) || null;
     },
-    playableFormat(state) {
-      return pickPlayableFormat(state.media?.formats || []);
+
+    /** The audio track that would be merged with the selection. Null unless the
+     *  selection is video only. */
+    pairedAudioFormat() {
+      const track = this.selectedFormat;
+
+      if (!track || track.kind !== "video") {
+        return null;
+      }
+
+      return bestAudioFor(this.media?.formats || []);
     }
   },
+
   actions: {
-    selectFormat(id) {
-      this.selectedFormatId = id;
+    select(formatId) {
+      this.selectedFormatId = formatId;
     },
-    clearError() {
-      this.error = null;
+
+    clear() {
+      this.url = "";
+      this.status = "empty";
+      this.media = null;
+      this.selectedFormatId = null;
+      this.failure = null;
     },
+
     async resolve(rawUrl) {
-      const url = rawUrl.trim();
+      const url = String(rawUrl || "").trim();
+
       this.url = url;
+      this.media = null;
+      this.selectedFormatId = null;
+      this.failure = null;
+
       if (!looksLikeUrl(url)) {
-        this.status = "error";
-        this.error = { code: "invalid_url" };
-        this.media = null;
+        this.status = "failed";
+        this.failure = { code: "invalid_url", message: describe({ code: "invalid_url" }), detail: null };
+
         return;
       }
 
       this.status = "resolving";
-      this.error = null;
-      this.media = null;
-      this.selectedFormatId = null;
 
       try {
-        const extractor = await getExtractor();
-        const media = await extractor.resolve(url);
+        const media = await extractor().resolve(url);
+
         this.media = media;
-        this.status = "ready";
-        const fallback = pickDefaultFormat(media.formats);
-        this.selectedFormatId = fallback?.id || null;
-        await useHistoryStore().remember(media, url);
+        this.selectedFormatId = defaultTrack(media.formats)?.id || null;
+        this.status = "resolved";
+
+        await useHistoryStore().remember(media);
       } catch (error) {
-        this.status = "error";
-        this.error = errorFromUnknown(error);
+        this.status = "failed";
+        this.failure = {
+          code: codeOf(error),
+          message: describe(error),
+          detail: detailOf(error)
+        };
       }
     }
   }
