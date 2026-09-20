@@ -12,6 +12,12 @@ const DEFAULT_TIMEOUT_MS = 20000;
 const ACTIVE_POLL_MS = 700;
 const IDLE_POLL_MS = 2500;
 
+// A process that is going to fail usually does so within its first second or
+// two (Python interpreter startup, then an import or syntax error). Waiting
+// this many empty polls -- once, per stall -- catches that quickly without
+// adding a check to every poll of a legitimately slow operation.
+const CRASH_CHECK_AFTER_EMPTY_POLLS = 2;
+
 function newRequestId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -34,6 +40,8 @@ export class ExtractorClient {
     this.jobListeners = new Set();
     this.timer = null;
     this.busy = false;
+    this.emptyPollStreak = 0;
+    this.livenessCheckedThisStall = false;
   }
 
   onJob(listener) {
@@ -65,7 +73,10 @@ export class ExtractorClient {
         this.pending.delete(id);
       }
 
-      throw new ProtocolError("service_unavailable", error?.message || "The extractor is not reachable.");
+      throw new ProtocolError(
+        error?.code || "service_unavailable",
+        error?.message || "The extractor is not reachable."
+      );
     }
 
     this.poll();
@@ -145,7 +156,56 @@ export class ExtractorClient {
       this.dispatch(line);
     }
 
+    if (lines.length > 0 || this.pending.size === 0) {
+      this.emptyPollStreak = 0;
+      this.livenessCheckedThisStall = false;
+    } else {
+      this.emptyPollStreak += 1;
+      await this.checkForCrash();
+    }
+
     this.schedule();
+  }
+
+  /** Nothing has arrived while at least one caller is waiting. If the extractor
+   *  process has actually died -- it never started, or it started and exited
+   *  almost immediately -- polling for output would otherwise wait out each
+   *  pending request's own timeout (up to 190 seconds for a resolve) with no
+   *  indication of why. Checked once per stall, not on every poll, so a
+   *  legitimately slow operation against a healthy process is not penalised. */
+  async checkForCrash() {
+    if (this.livenessCheckedThisStall || this.emptyPollStreak < CRASH_CHECK_AFTER_EMPTY_POLLS) {
+      return;
+    }
+
+    this.livenessCheckedThisStall = true;
+
+    if (!this.channel.checkLiveness) {
+      return;
+    }
+
+    let error;
+
+    try {
+      error = await this.channel.checkLiveness();
+    } catch {
+      return;
+    }
+
+    if (error) {
+      this.failAllPending(new ProtocolError(error.code, error.message));
+    }
+  }
+
+  failAllPending(error) {
+    for (const entry of this.pending.values()) {
+      clearTimeout(entry.timer);
+      entry.reject(error);
+    }
+
+    this.pending.clear();
+    this.emptyPollStreak = 0;
+    this.livenessCheckedThisStall = false;
   }
 
   dispatch(line) {

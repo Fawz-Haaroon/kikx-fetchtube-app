@@ -155,20 +155,43 @@ source tree into `apps/` by hand will not work.
 npm test           # extractor unit and protocol tests (Python)
 npm run test:render  # server-renders the component tree
 npm run test:client  # protocol client against a real extractor process
+npm run test:micro   # MicroChannel against KIKX's real micro-service routes
 ```
 
 `test:client` generates a short clip with ffmpeg, serves it over loopback, and
 drives resolve, download, cancellation, library listing and deletion through the
 same client that ships in the bundle. It skips itself if ffmpeg is missing.
 
+`test:micro` is the one that matters most for KIKX integration: it drives the
+real `MicroChannel` against KIKX's actual asyncio `Micro` class and HTTP routes
+(only the auth layer is stubbed), for both a healthy extractor and one that
+raises on its first line, and asserts the second case fails within a few
+seconds with the real reason rather than after the full request timeout.
+`test:client` cannot catch a bug in `MicroChannel` itself, since it talks to
+`tools/dev-server.py` — a development stand-in with its own separate transport
+class — not KIKX's real micro service. Set `KIKX_SOURCE_PATH` to a local KIKX
+checkout, or place one at `../kikx`; it skips itself if neither is found.
+
 ## Known limitations
 
 These are real and were not worked around:
 
-- **Not verified on Android or Termux.** Everything here was built and tested on
-  desktop Linux. Behaviour of KIKX's micro service under Termux — in particular
-  its `preexec_fn` user demotion, which calls `pwd.getpwnam` — was not exercised
-  on a device.
+- **Verified against real KIKX server code on desktop Linux, not against an
+  actual Android/Termux device.** `test:micro` drives the real `MicroChannel`
+  against KIKX's actual asyncio `Micro` class, HTTP routes, and installer —
+  confirmed for a healthy extractor, one that fails to start, one that starts
+  and crashes immediately, and the KV service backing history — all through
+  genuinely installed FetchTube packages, not a reimplementation of KIKX. What
+  none of that can exercise is `preexec_fn`'s user demotion
+  (`pwd.getpwnam`) as it actually behaves under Termux specifically, or
+  anything else that is genuinely Android-only. A permission-based failure was
+  investigated directly (installing under a restrictive directory tree does
+  reproduce a silent, undiagnosable hang, which is what motivated the
+  liveness check in `MicroChannel`) and packaging was checked for its own
+  permission handling (`zipfile.extractall()` does not preserve unusual
+  permission bits from the archive, so a normally-built package is not at risk
+  from that specific angle) — but a Termux-specific cause cannot be ruled out
+  without testing on the actual device.
 - **The UI has not been run in a WebView inside KIKX.** It builds, server-renders
   and passes protocol tests, but no browser rendering was performed.
 - **Playback of remote streams inside the KIKX iframe is unverified.** The

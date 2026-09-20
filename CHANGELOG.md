@@ -8,6 +8,18 @@ extraction service and the frontend were rebuilt against the KIKX 0.4.0 source.
 
 ### Fixed
 
+- The client had no way to tell a healthy extractor from one that failed to
+  start at all. KIKX's micro `start()` reply already reports whether the
+  process is running and why not if it isn't, but the SDK's
+  `MicroService.start()` discards that body. Every startup failure was
+  therefore invisible: the output list simply never received anything, and the
+  UI reported a generic 20-second timeout regardless of the actual cause.
+  `MicroChannel` now checks the same per-service status through `list()`, once
+  right after starting and once more if a request stalls with nothing
+  arriving, and the client fails immediately with the specific reason instead
+  of waiting out the full timeout. Verified against KIKX's real micro-service
+  routes and asyncio process handling — not a reimplementation — for both a
+  healthy start and a process that raises on its first line.
 - The package could never install: `app.json` listed `public` in `include` but
   the directory did not exist, so KIKX's installer raised `FileNotFoundError`
   on every attempt. Added `public/icon.png`.

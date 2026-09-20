@@ -11,6 +11,7 @@
     "test": "python3 -m unittest discover -s tests -v",
     "test:render": "vite build --ssr tests/render-smoke.entry.js --outDir .dev/ssr --logLevel error && node tests/render-smoke.mjs",
     "test:client": "node tests/client.integration.mjs",
+    "test:micro": "node tests/micro-channel.integration.mjs",
     "package": "node tools/package.mjs"
   },
   "dependencies": {

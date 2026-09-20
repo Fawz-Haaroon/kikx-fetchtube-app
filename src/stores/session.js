@@ -4,7 +4,7 @@ import { ExtractorClient } from "@/extractor/client.js";
 import { DevChannel } from "@/kikx/devChannel.js";
 import { MicroChannel } from "@/kikx/microChannel.js";
 import { appDataUrl, useRuntime } from "@/kikx/runtime.js";
-import { codeOf, describe } from "@/extractor/messages.js";
+import { codeOf, describe, detailOf } from "@/extractor/messages.js";
 
 let client = null;
 let runtimeRef = null;
@@ -51,7 +51,7 @@ export const useSessionStore = defineStore("session", {
         this.status = "ready";
       } catch (error) {
         this.status = "failed";
-        this.failure = { code: codeOf(error), message: describe(error) };
+        this.failure = { code: codeOf(error), message: describe(error), detail: detailOf(error) };
       }
     },
 

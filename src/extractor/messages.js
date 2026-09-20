@@ -26,7 +26,8 @@ const MESSAGES = {
   unknown_operation: "FetchTube asked the extractor for something it does not support.",
   malformed_command: "The extractor received a malformed command.",
   no_response: "The extractor did not respond.",
-  service_unavailable: "The extraction service is not running."
+  service_unavailable: "The extraction service is not running.",
+  extractor_crashed: "The extractor stopped right after starting."
 };
 
 export function describe(error) {
