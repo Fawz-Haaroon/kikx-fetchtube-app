@@ -176,22 +176,19 @@ checkout, or place one at `../kikx`; it skips itself if neither is found.
 
 These are real and were not worked around:
 
-- **Verified against real KIKX server code on desktop Linux, not against an
-  actual Android/Termux device.** `test:micro` drives the real `MicroChannel`
-  against KIKX's actual asyncio `Micro` class, HTTP routes, and installer —
-  confirmed for a healthy extractor, one that fails to start, one that starts
-  and crashes immediately, and the KV service backing history — all through
-  genuinely installed FetchTube packages, not a reimplementation of KIKX. What
-  none of that can exercise is `preexec_fn`'s user demotion
-  (`pwd.getpwnam`) as it actually behaves under Termux specifically, or
-  anything else that is genuinely Android-only. A permission-based failure was
-  investigated directly (installing under a restrictive directory tree does
-  reproduce a silent, undiagnosable hang, which is what motivated the
-  liveness check in `MicroChannel`) and packaging was checked for its own
-  permission handling (`zipfile.extractall()` does not preserve unusual
-  permission bits from the archive, so a normally-built package is not at risk
-  from that specific angle) — but a Termux-specific cause cannot be ruled out
-  without testing on the actual device.
+- **Requires a KIKX build with the `Micro.demote`/`QTask.demote` fix.** On
+  Termux, starting the extractor failed with `PermissionError` from
+  `preexec_fn`, confirmed from a real device traceback: KIKX unconditionally
+  tries to `setuid`/`setgid` the process to the identity already running it
+  before every micro-service and tasker launch, and Android's per-app SELinux
+  policy (`untrusted_app`) denies that syscall outright even though it would
+  not change anything. This is not something `app.json` or FetchTube's own
+  code can opt out of — it happens in KIKX core, before `main.py` runs. The fix
+  (skip the syscalls when the target identity already matches the current one)
+  needs to be applied to the KIKX checkout itself; see the project's own
+  changelog for the exact patch. Confirmed against real KIKX server code that
+  it does not change behaviour for a genuine privilege drop (root demoting a
+  non-sudo app to `nobody`), only skips the no-op case that was failing.
 - **The UI has not been run in a WebView inside KIKX.** It builds, server-renders
   and passes protocol tests, but no browser rendering was performed.
 - **Playback of remote streams inside the KIKX iframe is unverified.** The

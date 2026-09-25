@@ -8,6 +8,14 @@ extraction service and the frontend were rebuilt against the KIKX 0.4.0 source.
 
 ### Fixed
 
+- Pasting a link and pressing search could silently do nothing: no spinner, no
+  error, nothing. `UrlBar` used a real `<form>` with `@submit.prevent`, which
+  depends on the browser's native form-submission handling — a mechanism this
+  app never actually needed, since FetchTube always resolves over `fetch()`
+  regardless of what the browser's own submission would have done. Replaced
+  with direct `click`/`keydown.enter` bindings, removing the dependency on that
+  mechanism entirely rather than depending on a specific interpretation of how
+  the surrounding iframe sandbox affects it.
 - The client had no way to tell a healthy extractor from one that failed to
   start at all. KIKX's micro `start()` reply already reports whether the
   process is running and why not if it isn't, but the SDK's
